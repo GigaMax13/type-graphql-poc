@@ -9,5 +9,5 @@ export class User {
 
   @Field(() => String)
   @IsString()
-  name: string;
+  name: string | null;
 }

@@ -6,45 +6,58 @@ import {
   Resolver,
   Root,
 } from 'type-graphql';
+import { GraphQLError } from 'graphql';
 
 import { CreateAppointmentInput } from '../dtos/inputs/createAppointment.input';
 import { Appointment } from '../dtos/models/appointment.model';
 import { User } from '../dtos/models/user.model';
-import { appointments, users } from '../fakeDB';
+import { prisma } from '../utils/prisma';
 
 @Resolver(() => Appointment)
 export class AppointmentsResolver {
   @Query(() => [Appointment])
-  appointments() {
-    return appointments;
+  async appointments() {
+    return (await prisma.appointment.findMany()) ?? [];
   }
 
   @Mutation(() => Appointment)
-  createAppointment(
+  async createAppointment(
     @Arg('data', () => CreateAppointmentInput)
     { userId, startDate, endDate }: CreateAppointmentInput
-  ): Appointment {
-    const user = users.find((user) => user.id === userId);
+  ): Promise<Appointment> {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
     if (!user) {
-      throw new Error('User not found!');
+      throw new GraphQLError('User not found!');
     }
 
-    const appointment: Appointment = {
-      userId,
-      startDate,
-      endDate,
-    };
-
-    appointments.push(appointment);
+    const appointment = await prisma.appointment.create({
+      data: {
+        userId,
+        startDate,
+        endDate,
+      },
+    });
 
     return appointment;
   }
 
   @FieldResolver(() => User)
-  async user(@Root() { userId }: Appointment) {
-    const user = users.find((user) => user.id === userId);
+  async user(@Root() { userId }: Appointment): Promise<User> {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
     if (!user) {
-      throw new Error('User not found!');
+      throw new GraphQLError('User not found!');
     }
 
     return user;
