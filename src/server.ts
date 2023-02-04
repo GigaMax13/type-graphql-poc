@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 
 import { ApolloServer } from 'apollo-server';
+import depthLimit from 'graphql-depth-limit';
 import { buildSchema } from 'type-graphql';
 import path from 'node:path';
 
@@ -10,7 +11,7 @@ import path from 'node:path';
     emitSchemaFile: path.resolve(__dirname, 'graphql/schema.gql'),
   });
 
-  const server = new ApolloServer({ schema });
+  const server = new ApolloServer({ schema, validationRules: [depthLimit(3)] });
 
   const { url } = await server.listen();
 
